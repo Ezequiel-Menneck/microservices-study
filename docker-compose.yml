@@ -1,7 +1,10 @@
 version: '3.4'
 services:
   naming-service:
-    image: menneck/naming-service:0.0.1-SNAPSHOT
+    image: menneck/naming-service
+    build:
+      context: .
+      dockerfile: naming-server/Dockerfile
     ports:
       - "8761:8761"
     networks:
