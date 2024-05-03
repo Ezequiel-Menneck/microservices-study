@@ -1,0 +1,35 @@
+server:
+  port: 8000
+spring:
+  application:
+    name: cambio-service
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/cambio_service
+    username: ezequiel
+    password: 123456
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database: postgresql
+  flyway:
+    url: jdbc:postgresql://localhost:5432/cambio_service
+    user: ezequiel
+    password: 123456
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+springdoc:
+  api-docs:
+    path: cambio-service/v3/api-docs
+  swagger-ui:
+    path: cambio-service/swagger-ui.html
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://zipkin-server:9411

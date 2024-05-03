@@ -1,0 +1,108 @@
+version: '3.4'
+services:
+  naming-service:
+    image: menneck/naming-service:0.0.1-SNAPSHOT
+    ports:
+      - "8761:8761"
+    networks:
+      - menneck-network
+
+  zipkin-server:
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+    depends_on:
+      - naming-service
+    networks:
+      - menneck-network
+
+  api-gateway:
+    image: menneck/api-gateway
+    ports:
+      - "8765:8765"
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    environment:
+      MANAGEMENT.ZIPKIN.TRACING.ENPOINT: http://zipkin-server:9411/
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-service:8761/eureka
+    depends_on:
+      - naming-service
+      - zipkin-server
+    networks:
+      - menneck-network
+
+  cambio-service:
+    image: menneck/cambio-service
+    restart: always
+    build:
+      context: .
+      dockerfile: cambio-service/Dockerfile
+    environment:
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-service:8761/eureka
+      MANAGEMENT.ZIPKIN.TRACING.ENPOINT: http://zipkin-server:9411/
+      SPRING.DATASOURCE.URL: jdbc:postgresql://cambio-db:5432/cambio_service
+      SPRING.DATASOURCE.USERNAME: ezequiel
+      SPRING.DATASOURCE.PASSWORD: 123456
+      SPRING.FLYWAY.URL: jdbc:postgresql://cambio-db:5432/cambio_service
+      SPRING.FLYWAY.USER: ezequiel
+      SPRING.FLYWAY.PASSWORD: 123456
+    ports:
+      - "8000:8000"
+    depends_on:
+      - api-gateway
+      - cambio-db
+    networks:
+      - menneck-network
+
+  book-service:
+    image: menneck/book-service
+    restart: always
+    build:
+      context: .
+      dockerfile: book-service/Dockerfile
+    environment:
+      EUREKA.CLIENT.SERVICEURL.DEFAULTZONE: http://naming-service:8761/eureka
+      MANAGEMENT.ZIPKIN.TRACING.ENPOINT: http://zipkin-server:9411/
+      SPRING.DATASOURCE.URL: jdbc:postgresql://book-db:5433/book_service
+      SPRING.DATASOURCE.USERNAME: ezequiel
+      SPRING.DATASOURCE.PASSWORD: 123456
+      SPRING.FLYWAY.URL: jdbc:postgresql://book-db:5433/book_service
+      SPRING.FLYWAY.USER: ezequiel
+      SPRING.FLYWAY.PASSWORD: 123456
+    ports:
+      - "8100:8100"
+    depends_on:
+      - api-gateway
+      - book-db
+    networks:
+      - menneck-network
+
+  cambio-db:
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=cambio_service
+      - POSTGRES_USER=ezequiel
+      - POSTGRES_PASSWORD=123456
+    networks:
+      - menneck-network
+
+  book-db:
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5433:5433"
+    environment:
+      - POSTGRES_DB=book_service
+      - POSTGRES_USER=ezequiel
+      - POSTGRES_PASSWORD=123456
+    command:
+      - -p 5433
+    networks:
+      - menneck-network
+networks:
+  menneck-network:
+    driver: bridge
